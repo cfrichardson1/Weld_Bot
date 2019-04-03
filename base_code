@@ -1,0 +1,57 @@
+#include <Stepper.h>
+#include <LiquidCrystal.h>
+// set this to the microstep value on the stepper driver
+const int stepsPerRevolution = 1600;
+int dim=stepsPerRevolution;
+LiquidCrystal lcd(8,9,4,5,6,7);
+
+// Define our three i nput button pins
+#define LEFT_PIN 11
+#define STOP_PIN 1
+#define RIGHT_PIN 0
+
+Stepper myStepper(stepsPerRevolution, 2, 3);
+
+int stepCount = 0;
+unsigned long previousMillis = 0;
+const long interval = 1000;
+void setup() {
+  // Set up the three button inputs, with pullups
+  pinMode(LEFT_PIN, INPUT_PULLUP);
+  pinMode(STOP_PIN, INPUT_PULLUP);
+  pinMode(RIGHT_PIN, INPUT_PULLUP);
+  lcd.begin(16, 2);
+  lcd.setCursor(1,0);
+  lcd.print("Speed:");
+  lcd.setCursor(12,0);
+  lcd.print("RPM");
+  Serial.begin(9600);
+}
+
+void loop() {
+  static char sign = 0;
+  if (digitalRead(LEFT_PIN) == 0) {
+    sign = 1;
+  }
+  else if (digitalRead(RIGHT_PIN) == 0) {
+    sign = -1;
+  }
+  else if (digitalRead(STOP_PIN) == 0) {
+    sign = 0;
+  }
+  // read the sensor value:
+  int sensorReading = analogRead(A1);
+  // map it to a range from 0 to 120:
+  int motorSpeed = map(sensorReading, 0, 1023, 0, 120);
+  // set the motor speed:
+  if (motorSpeed > 0) {
+    myStepper.setSpeed(motorSpeed);
+    myStepper.step(sign*stepsPerRevolution / 100);
+    unsigned long currentMillis = millis();
+    if (currentMillis - previousMillis >= interval) {
+      previousMillis = currentMillis;
+      lcd.setCursor(7,0);
+      lcd.print(float(float(motorSpeed)/float(12)),1);
+    }
+  }
+}
