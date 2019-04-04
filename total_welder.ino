@@ -2,6 +2,7 @@
 #include <LiquidCrystal.h>
 
 // Stepper
+const int loops_2_complete_rev = 10; // loops needed to complete one revoultion
 const int stepsPerRevolution = 13000; // microstep value
 Stepper myStepper(stepsPerRevolution, 2, 3);
 
@@ -18,8 +19,8 @@ int adc_key_in  = 0;
 
 // Default Values for
 float delay_value = 0.0;  // delay time before start
-float speed_value = 10.0; // speed value for rotation
-
+float speed_value = 7.0; // speed value for rotation
+int pause_time = 0;
 
 // LCD
 LiquidCrystal lcd(8,9,4,5,6,7);
@@ -43,6 +44,7 @@ int read_LCD_buttons()
 // Pins
 const int ON_BUTTON_PIN = 11;
 const int POTENTIOMETER_PIN = A1;
+const int PAUSE_BUTTON_PIN = 1;
 
 void loop() {
   lcd_key = read_LCD_buttons(); // read the buttons
@@ -103,11 +105,28 @@ void loop() {
     delay(delay_value*1000);
     myStepper.setSpeed(speed_value*12);
 
-    // Run stepper motor
-    myStepper.step(stepsPerRevolution);
+    for(int loop_count = 1; loop_count <= loops_2_complete_rev; loop_count++){ // microstep revolution loop
+      // Run stepper motor
+      myStepper.step(stepsPerRevolution/loops_2_complete_rev);
+      if(digitalRead(PAUSE_BUTTON_PIN) == 0){ // PAUSE FN
+        pause_time = 60; // int value represents 1 second
 
+        // -----PAUSE LOOP MATH-----
+        // (pause_time*10 seconds) / seconds per minute = total pause time
+        // (pause_time*10) / 60 = x minutes
+
+        for(int timer_count = 1; timer_count <= pause_time; timer_count++){
+          if(digitalRead(ON_BUTTON_PIN) == 0) {
+            break;
+          }
+          delay(1000);
+        }
+      }
+
+
+    }
     // Increase speed for return to 0
-    myStepper.setSpeed(120);
+    myStepper.setSpeed(180);
     myStepper.step(-stepsPerRevolution);
   }
 }
@@ -115,6 +134,7 @@ void loop() {
 void setup() {
   // Initialize Pins
   pinMode(ON_BUTTON_PIN, INPUT_PULLUP);
+  pinMode(PAUSE_BUTTON_PIN, INPUT_PULLUP);
 
   lcd.begin(16, 2); // start the library
 
