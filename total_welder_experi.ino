@@ -1,22 +1,12 @@
 #include <Stepper.h>
 #include <LiquidCrystal.h>
-// Pins
-const int ON_BUTTON_PIN = 11;
-const int PAUSE_BUTTON_PIN = 1;
-const int POTENTIOMETER_PIN = A1;
 
 // Stepper
-const int steps  = 10; // microstep value
-const int loops_2_complete_rev = 1300; // loops needed to complete one revoultion of 13k steps
-Stepper myStepper(steps, 2, 3);
+const int loops_2_complete_rev = 10; // loops needed to complete one revoultion
+const int stepsPerRevolution = 13000; // microstep value
+Stepper myStepper(stepsPerRevolution, 2, 3);
 
-// Default Values for
-float delay_value = 0.0;  // delay time before start
-float speed_value = 10.0; // speed value for rotation
-int pause_time = 0; // default pause time
 
-// LCD
-LiquidCrystal lcd(8,9,4,5,6,7);
 // define some values used by the panel and buttons
 int lcd_key     = 0;
 int adc_key_in  = 0;
@@ -27,7 +17,15 @@ int adc_key_in  = 0;
 #define btnSELECT 4
 #define btnNONE   5
 
-// Reads the LCD button input
+// Default Values for
+float delay_value = 0.0;  // delay time before start
+float speed_value = 7.0; // speed value for rotation
+int pause_time = 0;
+
+// LCD
+LiquidCrystal lcd(8,9,4,5,6,7);
+
+// Reads the button input
 int read_LCD_buttons()
 {
   adc_key_in = analogRead(0); // read the value from the sensor
@@ -38,9 +36,15 @@ int read_LCD_buttons()
   if (adc_key_in < 350)  return btnDOWN;
   if (adc_key_in < 450)  return btnLEFT;
   if (adc_key_in < 650)  return btnSELECT;
+
   return btnNONE;  // when all others fail, return this...
 }
 
+
+// Pins
+const int ON_BUTTON_PIN = 11;
+const int POTENTIOMETER_PIN = A1;
+const int PAUSE_BUTTON_PIN = 1;
 
 void loop() {
   lcd_key = read_LCD_buttons(); // read the buttons
@@ -97,44 +101,40 @@ void loop() {
     }
   }
 
+  if (digitalRead(ON_BUTTON_PIN) == 0) {
+    delay(delay_value*1000);
+    myStepper.setSpeed(speed_value*12);
 
-  if (digitalRead(ON_BUTTON_PIN) == 0) { //ON FN
-    delay(delay_value*1000); // set delay start value
-    myStepper.setSpeed(speed_value*12); // set motor speed
-
-    // run loop 1300 times to complete full revolution
-    for(int loop_count = 0; loop_count <= loops_2_complete_rev; loop_count++){ // microstep revolution loop
-      // Run stepper motor @ 10 steps
-      myStepper.step(steps);
-
+    for(int loop_count = 1; loop_count <= loops_2_complete_rev; loop_count++){ // microstep revolution loop
+      // Run stepper motor
+      myStepper.step(stepsPerRevolution/loops_2_complete_rev);
       if(digitalRead(PAUSE_BUTTON_PIN) == 0){ // PAUSE FN
-        pause_time = 6; // int value represents 1 second
+        pause_time = 60; // int value represents 1 second
 
         // -----PAUSE LOOP MATH-----
         // (pause_time*10 seconds) / seconds per minute = total pause time
         // (pause_time*10) / 60 = x minutes
 
-        // runs 10 steps per loop and checks for PAUSE_BUTTON activation
-        for(int pause_loop = 0; pause_loop <= pause_time; pause_loop++){ // CHECK FN
-          delay(10000); // pause for 10 seconds
-          if (digitalRead(PAUSE_BUTTON_PIN) == 0) {
+        for(int timer_count = 1; timer_count <= pause_time; timer_count++){
+          if(digitalRead(ON_BUTTON_PIN) == 0) {
             break;
           }
-        } // ef CHECK FN
-      } // ef PAUSE FN
-    } // ef microstep revolution loop
+          delay(1000);
+        }
+      }
 
-    myStepper.setSpeed(180);  // Increase speed for return to 0
-    myStepper.step(-steps*1300);  // returns motor back to start position
-  } // ef ON FN
-}// ef VOID LOOP
 
+    }
+    // Increase speed for return to 0
+    myStepper.setSpeed(180);
+    myStepper.step(-stepsPerRevolution);
+  }
+}
 
 void setup() {
   // Initialize Pins
   pinMode(ON_BUTTON_PIN, INPUT_PULLUP);
   pinMode(PAUSE_BUTTON_PIN, INPUT_PULLUP);
-
 
   lcd.begin(16, 2); // start the library
 
