@@ -2,7 +2,7 @@
 #include <LiquidCrystal.h>
 
 // Stepper
-const int loops_2_complete_rev = 10; // loops needed to complete one revoultion
+const int loops_2_complete_rev = 100; // loops needed to complete one revoultion
 const int stepsPerRevolution = 13000; // microstep value
 Stepper myStepper(stepsPerRevolution, 2, 3);
 
@@ -20,7 +20,8 @@ int adc_key_in  = 0;
 // Default Values for
 float delay_value = 0.0;  // delay time before start
 float speed_value = 7.0; // speed value for rotation
-int pause_time = 0;
+int pause_time = 7200; // pause time 2 hour pause time *note 60 == 1 minute
+int self_destruct = 0; // 1 will allow the weldbot to stop & reset to 0 degrees
 
 // LCD
 LiquidCrystal lcd(8,9,4,5,6,7);
@@ -45,9 +46,11 @@ int read_LCD_buttons()
 const int ON_BUTTON_PIN = 11;
 const int POTENTIOMETER_PIN = A1;
 const int PAUSE_BUTTON_PIN = 1;
+const int SELF_DESTRUCT_PIN = 0;  // Stops and resets current run
 
 void loop() {
   lcd_key = read_LCD_buttons(); // read the buttons
+  self_destruct = 0;
 
   switch (lcd_key) // depending on which button was pushed, we perform an action
   {
@@ -109,21 +112,27 @@ void loop() {
       // Run stepper motor
       myStepper.step(stepsPerRevolution/loops_2_complete_rev);
       if(digitalRead(PAUSE_BUTTON_PIN) == 0){ // PAUSE FN
-        pause_time = 60; // int value represents 1 second
-
         // -----PAUSE LOOP MATH-----
         // (pause_time*10 seconds) / seconds per minute = total pause time
         // (pause_time*10) / 60 = x minutes
 
         for(int timer_count = 1; timer_count <= pause_time; timer_count++){
           if(digitalRead(ON_BUTTON_PIN) == 0) {
-            break;
+            break; // break out of loop
+          }
+          else if(digitalRead(SELF_DESTRUCT_PIN) == 0) {
+            self_destruct = 1; // sets self_destruct to ON! Wah hahahah =)
+            break; // break out of loop
           }
           delay(1000);
         }
+
       }
 
-
+      if(self_destruct == 1) { // checks to see if user stopped the run
+        self_destruct = 0; // sets self_destruct to OFF!
+        break;
+      }
     }
     // Increase speed for return to 0
     myStepper.setSpeed(180);
@@ -135,6 +144,7 @@ void setup() {
   // Initialize Pins
   pinMode(ON_BUTTON_PIN, INPUT_PULLUP);
   pinMode(PAUSE_BUTTON_PIN, INPUT_PULLUP);
+  pinMode(SELF_DESTRUCT_PIN, INPUT_PULLUP);
 
   lcd.begin(16, 2); // start the library
 

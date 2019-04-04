@@ -20,7 +20,7 @@ int adc_key_in  = 0;
 // Default Values for
 float delay_value = 0.0;  // delay time before start
 float speed_value = 7.0; // speed value for rotation
-int pause_time = 0;
+int pause_time = 60; // pause time within pause FN
 
 // LCD
 LiquidCrystal lcd(8,9,4,5,6,7);
@@ -109,8 +109,6 @@ void loop() {
       // Run stepper motor
       myStepper.step(stepsPerRevolution/loops_2_complete_rev);
       if(digitalRead(PAUSE_BUTTON_PIN) == 0){ // PAUSE FN
-        pause_time = 60; // int value represents 1 second
-
         // -----PAUSE LOOP MATH-----
         // (pause_time*10 seconds) / seconds per minute = total pause time
         // (pause_time*10) / 60 = x minutes
