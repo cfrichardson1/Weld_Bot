@@ -2,8 +2,9 @@
 #include <LiquidCrystal.h>
 
 // Stepper
-const int loops_2_complete_rev = 10; // loops needed to complete one revoultion
+const int loops_2_complete_rev = 100; // loops needed to complete one revoultion
 const int stepsPerRevolution = 13000; // microstep value
+int steps = 0; // holds how many steps per loop dependending on above values (stepsPerRevolution/loops_2_complete_rev)
 Stepper myStepper(stepsPerRevolution, 2, 3);
 
 
@@ -20,7 +21,10 @@ int adc_key_in  = 0;
 // Default Values for
 float delay_value = 0.0;  // delay time before start
 float speed_value = 7.0; // speed value for rotation
-int pause_time = 60; // pause time within pause FN
+
+// Place Holders
+int stop_n_reset = 0; // 1 will allow the weldbot to stop & reset to 0 degrees
+int step_counter = 0; // counts how many steps in revolution, allowing motor to reset back to 0
 
 // LCD
 LiquidCrystal lcd(8,9,4,5,6,7);
@@ -45,9 +49,11 @@ int read_LCD_buttons()
 const int ON_BUTTON_PIN = 11;
 const int POTENTIOMETER_PIN = A1;
 const int PAUSE_BUTTON_PIN = 1;
+const int STOP_N_RESET_PIN = 0;  // Stops and resets current run
 
 void loop() {
   lcd_key = read_LCD_buttons(); // read the buttons
+
 
   switch (lcd_key) // depending on which button was pushed, we perform an action
   {
@@ -107,32 +113,44 @@ void loop() {
 
     for(int loop_count = 1; loop_count <= loops_2_complete_rev; loop_count++){ // microstep revolution loop
       // Run stepper motor
-      myStepper.step(stepsPerRevolution/loops_2_complete_rev);
-      if(digitalRead(PAUSE_BUTTON_PIN) == 0){ // PAUSE FN
-        // -----PAUSE LOOP MATH-----
-        // (pause_time*10 seconds) / seconds per minute = total pause time
-        // (pause_time*10) / 60 = x minutes
+      steps = (stepsPerRevolution/loops_2_complete_rev);
+      myStepper.step(steps);
+      step_counter += steps;
 
-        for(int timer_count = 1; timer_count <= pause_time; timer_count++){
-          if(digitalRead(ON_BUTTON_PIN) == 0) {
+
+      if(digitalRead(PAUSE_BUTTON_PIN) == 0){ // PAUSE FN
+
+        while(digitalRead(ON_BUTTON_PIN) != 0){
+          delay(500);
+          if(digitalRead(STOP_N_RESET_PIN) == 0){ // set STOP N RESET TO ON
+            stop_n_reset = 1;
             break;
           }
-          delay(1000);
         }
       }
+      else if(digitalRead(STOP_N_RESET_PIN) == 0){ // set STOP N RESET TO ON
+        stop_n_reset = 1;
+      }
 
+      if(stop_n_reset == 1) { // checks if STOP N RESET is ON
+        break;
+      }
 
-    }
-    // Increase speed for return to 0
+    } // EO microstep loop
+
+    // Increase speed for return to 0 degrees & reset values
     myStepper.setSpeed(180);
-    myStepper.step(-stepsPerRevolution);
+    myStepper.step(-step_counter);
+    step_counter = 0;  // reset
+    stop_n_reset = 0; // reset
   }
-}
+} // EO VOID LOOP
 
 void setup() {
   // Initialize Pins
   pinMode(ON_BUTTON_PIN, INPUT_PULLUP);
   pinMode(PAUSE_BUTTON_PIN, INPUT_PULLUP);
+  pinMode(STOP_N_RESET_PIN, INPUT_PULLUP);
 
   lcd.begin(16, 2); // start the library
 

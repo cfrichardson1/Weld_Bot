@@ -1,3 +1,1 @@
-Add a stop & reset FN
-** need to add a counter to precisely reset to 0,
-currently over shooting 0 value by fully counter-clock resetting
+stop N Reset
