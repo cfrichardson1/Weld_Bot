@@ -1,1 +1,4 @@
 stop N Reset
+
+Never-ending forward loop
+REVERSE w/ random int 100+ steps *leave var on top of code for user to finely adjust

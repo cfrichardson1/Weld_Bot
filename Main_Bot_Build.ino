@@ -2,8 +2,11 @@
 #include <LiquidCrystal.h>
 
 // Stepper
-const int loops_2_complete_rev = 100; // loops needed to complete one revoultion
-const int stepsPerRevolution = 13000; // microstep value
+const int loops_2_complete_cycle = 500; // loops needed to complete one cycle/loop
+// ###################################### CHANGE THIS ############################################
+const int reset_steps = 1000
+const int stepsPerRevolution = 13000; // STEP VALUE FOR GEAR!!!
+// ###############################################################################################
 int steps = 0; // holds how many steps per loop dependending on above values (stepsPerRevolution/loops_2_complete_rev)
 Stepper myStepper(stepsPerRevolution, 2, 3);
 
@@ -23,6 +26,7 @@ float delay_value = 0.0;  // delay time before start
 float speed_value = 7.0; // speed value for rotation
 
 // Place Holders
+
 int stop_n_reset = 0; // 1 will allow the weldbot to stop & reset to 0 degrees
 int step_counter = 0; // counts how many steps in revolution, allowing motor to reset back to 0
 
@@ -47,7 +51,6 @@ int read_LCD_buttons()
 
 // Pins
 const int ON_BUTTON_PIN = 11;
-const int POTENTIOMETER_PIN = A1;
 const int PAUSE_BUTTON_PIN = 1;
 const int STOP_N_RESET_PIN = 0;  // Stops and resets current run
 
@@ -111,13 +114,15 @@ void loop() {
     delay(delay_value*1000);
     myStepper.setSpeed(speed_value*12);
 
-    // Steps divided by loops_2_complete will  be  how many times this loop runs
+for(int loop_count =1 ; loop_count <= 4; loop_count++){
+  myStepper.step(-step_counter);
+}
+// Steps divided by loops_2_complete will  be  how many times this loop runs
     for(int loop_count = 1; loop_count <= loops_2_complete_rev; loop_count++){ // microstep revolution loop
       // Run stepper motor
       steps = (stepsPerRevolution/loops_2_complete_rev);
       myStepper.step(steps);
       step_counter += steps;
-
 
       if(digitalRead(PAUSE_BUTTON_PIN) == 0){ // PAUSE FN
 

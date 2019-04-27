@@ -2,11 +2,8 @@
 #include <LiquidCrystal.h>
 
 // Stepper
-const int loops_2_complete_rev = 100; // loops needed to complete one revoultion
-const int stepsPerRevolution = 13000; // microstep value
-int steps = 0; // holds how many steps per loop dependending on above values (stepsPerRevolution/loops_2_complete_rev)
+const int stepsPerRevolution = 13000; // STEP VALUE FOR GEAR!!!-
 Stepper myStepper(stepsPerRevolution, 2, 3);
-
 
 // define some values used by the panel and buttons
 int lcd_key     = 0;
@@ -47,9 +44,8 @@ int read_LCD_buttons()
 
 // Pins
 const int ON_BUTTON_PIN = 11;
-const int POTENTIOMETER_PIN = A1;
 const int PAUSE_BUTTON_PIN = 1;
-const int STOP_N_RESET_PIN = 0;  // Stops and resets current run
+const int RESET_PIN = 0;  // Stops and resets current run
 
 void loop() {
   lcd_key = read_LCD_buttons(); // read the buttons
@@ -108,43 +104,18 @@ void loop() {
   }
 
   if (digitalRead(ON_BUTTON_PIN) == 0) {
-    delay(delay_value*1000);
-    myStepper.setSpeed(speed_value*12);
+    delay(delay_value*1000); // delay start time in seconds
+    myStepper.setSpeed(speed_value*12); // set motor speed
 
-    // Steps divided by loops_2_complete will  be  how many times this loop runs
-    for(int loop_count = 1; loop_count <= loops_2_complete_rev; loop_count++){ // microstep revolution loop
-      // Run stepper motor
-      steps = (stepsPerRevolution/loops_2_complete_rev);
-      myStepper.step(steps);
-      step_counter += steps;
-
-
-      if(digitalRead(PAUSE_BUTTON_PIN) == 0){ // PAUSE FN
-
-        while(digitalRead(ON_BUTTON_PIN) != 0){
-          delay(500);
-          if(digitalRead(STOP_N_RESET_PIN) == 0){ // set STOP N RESET TO ON
-            stop_n_reset = 1;
-            break;
-          }
-        }
-      }
-      else if(digitalRead(STOP_N_RESET_PIN) == 0){ // set STOP N RESET TO ON
-        stop_n_reset = 1;
-      }
-
-      if(stop_n_reset == 1) { // checks if STOP N RESET is ON
-        break;
-      }
-
-    } // EO microstep loop
-
-    // Increase speed for return to 0 degrees & reset values
-    myStepper.setSpeed(180);
-    myStepper.step(-step_counter);
-    step_counter = 0;  // reset
-    stop_n_reset = 0; // reset
+    while(digtalRead(STOP_N_RESET_PIN) != 0){
+      myStepper.step(steps/loops_2_complete_loop);  // Run stepper motor, *as denom increases the responsiveness of the loop increases
+    }
+    break;
   }
+  else if(digitalRead(RESET_PIN) == 0){
+    myStepper.step(reset_steps);
+  }
+
 } // EO VOID LOOP
 
 void setup() {
